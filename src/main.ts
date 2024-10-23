@@ -5,66 +5,74 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 
 document.title = APP_NAME;
 
+// Create title
 const title = document.createElement('h1');
 title.textContent = 'Gamin';
 app.appendChild(title);
 
-// Canvas
+// Create canvas
 const canvas = document.getElementById("display") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
-// Buttons
-const clear = document.createElement('button');
-clear.textContent = "clear";
-app.appendChild(clear);
+// Create buttons
+const clearButton = document.createElement('button');
+clearButton.textContent = "Clear";
+app.appendChild(clearButton);
 
-// Store Lines
-const lines: Array<Array<{x: number, y: number}>> = [];
-let currentLine: Array<{x: number, y: number}> = [];
+const undoButton = document.createElement('button');
+undoButton.textContent = "Undo";
+app.appendChild(undoButton);
+
+const redoButton = document.createElement('button');
+redoButton.textContent = "Redo";
+app.appendChild(redoButton);
+
+// Store lines and redo stack
+const lines: Array<Array<{ x: number, y: number }>> = [];
+let currentLine: Array<{ x: number, y: number }> = [];
+const redoStack: Array<Array<{ x: number, y: number }>> = [];
 
 // Drawing state
-const cursor = {active: false, x: 0, y: 0};
+const cursor = { active: false, x: 0, y: 0 };
 
-// Custom event drawing changed
+// Custom event to trigger drawing changed
 function triggerDrawingChanged() {
     const event = new CustomEvent("drawing-changed");
     canvas.dispatchEvent(event);
 }
 
-// Event Listener to clear and redraw all lines
+// Event listener to redraw all lines
 canvas.addEventListener("drawing-changed", () => {
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
     for (const line of lines) {
         ctx?.beginPath();
-        for (let i = 0; i < line.length - 1; i++) {
-            ctx?.moveTo(line[i].x, line[i].y);
-            ctx?.lineTo(line[i + 1].x, line[i + 1].y);
+        ctx?.moveTo(line[0].x, line[0].y);
+        for (const point of line) {
+            ctx?.lineTo(point.x, point.y);
         }
         ctx?.stroke();
     }
 });
 
-// Start a new line and save the initial point
+// Start a new line
 canvas.addEventListener("mousedown", (event) => {
     cursor.active = true;
     currentLine = [];
     lines.push(currentLine);
     const startX = event.offsetX;
     const startY = event.offsetY;
-    currentLine.push({x: startX, y: startY});
+    currentLine.push({ x: startX, y: startY });
     cursor.x = startX;
     cursor.y = startY;
     triggerDrawingChanged();
 });
 
-// Save mouse movement positions and push them to the current line
+// Track mouse movements
 canvas.addEventListener("mousemove", (event) => {
     if (cursor.active) {
         const newX = event.offsetX;
         const newY = event.offsetY;
-        currentLine.push({x: newX, y: newY});
-        cursor.x = newX;
-        cursor.y = newY;
+        currentLine.push({ x: newX, y: newY });
         triggerDrawingChanged();
     }
 });
@@ -75,7 +83,30 @@ canvas.addEventListener("mouseup", () => {
 });
 
 // Clear canvas button
-clear.addEventListener("click", () => {
-    lines.length = 0;
+clearButton.addEventListener("click", () => {
+    lines.length = 0; 
+    redoStack.length = 0;
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+// Undo functionality
+undoButton.addEventListener("click", () => {
+    if (lines.length > 0) {
+        const lastLine = lines.pop(); 
+        if (lastLine) {
+            redoStack.push(lastLine);
+        }
+        triggerDrawingChanged(); 
+    }
+});
+
+// Redo functionality
+redoButton.addEventListener("click", () => {
+    if (redoStack.length > 0) {
+        const lastRedoLine = redoStack.pop(); 
+        if (lastRedoLine) {
+            lines.push(lastRedoLine); 
+        }
+        triggerDrawingChanged(); 
+    }
 });
