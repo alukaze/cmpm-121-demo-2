@@ -27,10 +27,31 @@ const redoButton = document.createElement('button');
 redoButton.textContent = "Redo";
 app.appendChild(redoButton);
 
+// Marker line
+class MarkerLine {
+    private points: Array<{ x: number, y: number }> = [];
+
+    constructor(x: number, y: number) {
+        this.points.push({ x, y });
+    }
+
+    public drag(x: number, y: number) {
+        this.points.push({ x, y });
+    }
+
+    public display(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        ctx.moveTo(this.points[0].x, this.points[0].y);
+        for (const point of this.points) {
+            ctx.lineTo(point.x, point.y);
+        }
+        ctx.stroke();
+    }
+}
+
 // Store lines and redo stack
-const lines: Array<Array<{ x: number, y: number }>> = [];
-let currentLine: Array<{ x: number, y: number }> = [];
-const redoStack: Array<Array<{ x: number, y: number }>> = [];
+const lines: MarkerLine[] = [];
+const redoStack: MarkerLine[] = [];
 
 // Drawing state
 const cursor = { active: false, x: 0, y: 0 };
@@ -45,25 +66,17 @@ function triggerDrawingChanged() {
 canvas.addEventListener("drawing-changed", () => {
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
     for (const line of lines) {
-        ctx?.beginPath();
-        ctx?.moveTo(line[0].x, line[0].y);
-        for (const point of line) {
-            ctx?.lineTo(point.x, point.y);
-        }
-        ctx?.stroke();
+        line.display(ctx!);
     }
 });
 
 // Start a new line
 canvas.addEventListener("mousedown", (event) => {
     cursor.active = true;
-    currentLine = [];
-    lines.push(currentLine);
     const startX = event.offsetX;
     const startY = event.offsetY;
-    currentLine.push({ x: startX, y: startY });
-    cursor.x = startX;
-    cursor.y = startY;
+    const newLine = new MarkerLine(startX, startY);
+    lines.push(newLine);
     triggerDrawingChanged();
 });
 
@@ -72,7 +85,8 @@ canvas.addEventListener("mousemove", (event) => {
     if (cursor.active) {
         const newX = event.offsetX;
         const newY = event.offsetY;
-        currentLine.push({ x: newX, y: newY });
+        const currentLine = lines[lines.length - 1];
+        currentLine.drag(newX, newY);
         triggerDrawingChanged();
     }
 });
