@@ -51,7 +51,7 @@ class MarkerLine {
     }
 
     public display(ctx: CanvasRenderingContext2D) {
-        ctx.lineWidth = this.thickness; // Set line thickness
+        ctx.lineWidth = this.thickness;
         ctx.beginPath();
         ctx.moveTo(this.points[0].x, this.points[0].y);
         for (const point of this.points) {
@@ -61,13 +61,31 @@ class MarkerLine {
     }
 }
 
+// Tool preview
+class ToolPreview {
+    private thickness: number;
+
+    constructor(thickness: number) {
+        this.thickness = thickness;
+    }
+
+    public draw(ctx: CanvasRenderingContext2D, x: number, y: number) {
+        ctx.beginPath();
+        ctx.arc(x, y, this.thickness / 2, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; 
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
 // Store lines and redo stack
 const lines: MarkerLine[] = [];
 const redoStack: MarkerLine[] = [];
 
 // Drawing state
 const cursor = { active: false, x: 0, y: 0 };
-let currentThickness = 2; // Default thickness
+let currentThickness = 2; 
+let toolPreview: ToolPreview | null = null; 
 
 // Custom event to trigger drawing changed
 function triggerDrawingChanged() {
@@ -80,6 +98,10 @@ canvas.addEventListener("drawing-changed", () => {
     ctx?.clearRect(0, 0, canvas.width, canvas.height);
     for (const line of lines) {
         line.display(ctx!);
+    }
+    // Draw the tool preview if it's not active
+    if (toolPreview && !cursor.active) {
+        toolPreview.draw(ctx!, cursor.x, cursor.y);
     }
 });
 
@@ -95,13 +117,20 @@ canvas.addEventListener("mousedown", (event) => {
 
 // Track mouse movements
 canvas.addEventListener("mousemove", (event) => {
+    cursor.x = event.offsetX;
+    cursor.y = event.offsetY;
+
     if (cursor.active) {
         const newX = event.offsetX;
         const newY = event.offsetY;
         const currentLine = lines[lines.length - 1];
         currentLine.drag(newX, newY);
-        triggerDrawingChanged();
+    } else {
+        // Update tool preview on mouse move
+        toolPreview = new ToolPreview(currentThickness);
     }
+
+    triggerDrawingChanged();
 });
 
 // Stop drawing on mouse release
@@ -140,9 +169,9 @@ redoButton.addEventListener("click", () => {
 
 // Set marker thickness on button click
 thinButton.addEventListener("click", () => {
-    currentThickness = 1; // Thin marker thickness
+    currentThickness = 1; 
 });
 
 thickButton.addEventListener("click", () => {
-    currentThickness = 5; // Thick marker thickness
+    currentThickness = 5; 
 });
