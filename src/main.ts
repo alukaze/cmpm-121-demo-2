@@ -7,7 +7,7 @@ document.title = APP_NAME;
 
 // Create title
 const title = document.createElement('h1');
-title.textContent = 'Gamin';
+title.textContent = 'PaintTool Sigh';
 app.appendChild(title);
 
 // Create canvas
@@ -27,12 +27,23 @@ const redoButton = document.createElement('button');
 redoButton.textContent = "Redo";
 app.appendChild(redoButton);
 
+// Create thickness buttons
+const thinButton = document.createElement('button');
+thinButton.textContent = "Thin";
+app.appendChild(thinButton);
+
+const thickButton = document.createElement('button');
+thickButton.textContent = "Thick";
+app.appendChild(thickButton);
+
 // Marker line
 class MarkerLine {
     private points: Array<{ x: number, y: number }> = [];
+    private thickness: number;
 
-    constructor(x: number, y: number) {
+    constructor(x: number, y: number, thickness: number) {
         this.points.push({ x, y });
+        this.thickness = thickness;
     }
 
     public drag(x: number, y: number) {
@@ -40,6 +51,7 @@ class MarkerLine {
     }
 
     public display(ctx: CanvasRenderingContext2D) {
+        ctx.lineWidth = this.thickness; // Set line thickness
         ctx.beginPath();
         ctx.moveTo(this.points[0].x, this.points[0].y);
         for (const point of this.points) {
@@ -55,6 +67,7 @@ const redoStack: MarkerLine[] = [];
 
 // Drawing state
 const cursor = { active: false, x: 0, y: 0 };
+let currentThickness = 2; // Default thickness
 
 // Custom event to trigger drawing changed
 function triggerDrawingChanged() {
@@ -75,7 +88,7 @@ canvas.addEventListener("mousedown", (event) => {
     cursor.active = true;
     const startX = event.offsetX;
     const startY = event.offsetY;
-    const newLine = new MarkerLine(startX, startY);
+    const newLine = new MarkerLine(startX, startY, currentThickness);
     lines.push(newLine);
     triggerDrawingChanged();
 });
@@ -123,4 +136,13 @@ redoButton.addEventListener("click", () => {
         }
         triggerDrawingChanged(); 
     }
+});
+
+// Set marker thickness on button click
+thinButton.addEventListener("click", () => {
+    currentThickness = 1; // Thin marker thickness
+});
+
+thickButton.addEventListener("click", () => {
+    currentThickness = 5; // Thick marker thickness
 });
