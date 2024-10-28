@@ -1,33 +1,26 @@
 import "./style.css";
 
 const APP_NAME = "Game 2";
-const app = document.querySelector<HTMLDivElement>("#app")!;
-
 document.title = APP_NAME;
 
-// Create title
-const title = document.createElement("h1");
-title.textContent = "PaintTool Sigh";
-app.appendChild(title);
-
-// Create canvas
+// DOM Elements
+const app = document.querySelector<HTMLDivElement>("#app")!;
 const canvas = document.getElementById("display") as HTMLCanvasElement;
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d")!;
 
-// Create buttons
+// Button Creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
-app.appendChild(clearButton);
+document.body.appendChild(clearButton);
 
 const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
-app.appendChild(undoButton);
+document.body.appendChild(undoButton);
 
 const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
-app.appendChild(redoButton);
+document.body.appendChild(redoButton);
 
-// Create thickness buttons
 const thinButton = document.createElement("button");
 thinButton.textContent = "Thin";
 app.appendChild(thinButton);
@@ -36,18 +29,16 @@ const thickButton = document.createElement("button");
 thickButton.textContent = "Thick";
 app.appendChild(thickButton);
 
-// Sticker data and dynamic button creation
+const exportButton = document.createElement("button");
+exportButton.textContent = "Export";
+document.body.appendChild(exportButton);
+
+// Sticker Data and Creation
 const stickerData = ["🍷", "🍸", "🍹"];
 const customStickers: string[] = [];
 
-createStickerButtons();
-
 function createStickerButtons() {
-    // Clear existing sticker buttons
-    const existingStickerButtons = document.querySelectorAll(".sticker-button");
-    existingStickerButtons.forEach((button) => button.remove());
-
-    // Add each sticker as a button
+    document.querySelectorAll(".sticker-button").forEach((button) => button.remove());
     [...stickerData, ...customStickers].forEach((emoji) => {
         const button = document.createElement("button");
         button.textContent = emoji;
@@ -66,9 +57,12 @@ customStickerButton.addEventListener("click", () => {
         createStickerButtons();
     }
 });
-app.appendChild(customStickerButton);
+document.body.appendChild(customStickerButton);
 
-// Marker line
+// Initial Stickers
+createStickerButtons()
+
+// Classes for Drawing and Stickers
 class MarkerLine {
     private points: Array<{ x: number; y: number }> = [];
     private thickness: number;
@@ -86,24 +80,13 @@ class MarkerLine {
         ctx.lineWidth = this.thickness;
         ctx.beginPath();
         ctx.moveTo(this.points[0].x, this.points[0].y);
-        for (const point of this.points) {
-            ctx.lineTo(point.x, point.y);
-        }
+        this.points.forEach(point => ctx.lineTo(point.x, point.y));
         ctx.stroke();
     }
 }
 
-// Sticker class
 class Sticker {
-    private emoji: string;
-    public x: number;
-    public y: number;
-
-    constructor(emoji: string, x: number, y: number) {
-        this.emoji = emoji;
-        this.x = x;
-        this.y = y;
-    }
+    constructor(private emoji: string, public x: number, public y: number) {}
 
     public drag(x: number, y: number) {
         this.x = x;
@@ -111,45 +94,32 @@ class Sticker {
     }
 
     public display(ctx: CanvasRenderingContext2D) {
-        const offsetX = 20;
-        const offsetY = 15;
         ctx.font = "30px Arial";
-        ctx.fillText(this.emoji, this.x - offsetX, this.y + offsetY);
+        ctx.fillText(this.emoji, this.x - 20, this.y + 15);
     }
 
     public isClicked(x: number, y: number): boolean {
-        const offsetX = 20;
-        const offsetY = 15;
-        const left = this.x - offsetX;
-        const right = this.x + offsetX;
-        const top = this.y - offsetY;
-        const bottom = this.y + offsetY;
-        return x >= left && x <= right && y >= top && y <= bottom;
+        return (
+            x >= this.x - 20 && x <= this.x + 20 &&
+            y >= this.y - 15 && y <= this.y + 15
+        );
     }
 }
 
-// Tool preview
 class ToolPreview {
-    private thickness: number;
-
-    constructor(thickness: number) {
-        this.thickness = thickness;
-    }
+    constructor(private thickness: number) {}
 
     public draw(ctx: CanvasRenderingContext2D, x: number, y: number) {
         ctx.beginPath();
         ctx.arc(x, y, this.thickness / 2, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
         ctx.fill();
-        ctx.closePath();
     }
 }
 
-// Store items and redo stack
+// State Management and Drawing Functions
 const items: Array<MarkerLine | Sticker> = [];
 const redoStack: Array<MarkerLine | Sticker> = [];
-
-// Drawing state
 const cursor = { active: false, x: 0, y: 0 };
 let currentThickness = 2;
 let toolPreview: ToolPreview | null = null;
@@ -157,55 +127,39 @@ let currentSticker: Sticker | null = null;
 let activeTool: "draw" | "sticker" = "draw";
 let isDraggingSticker = false;
 
-// Functions to handle tool selection
 function selectSticker(emoji: string) {
     activeTool = "sticker";
     currentSticker = new Sticker(emoji, cursor.x, cursor.y);
     triggerToolMoved();
 }
 
-// Event listener to redraw all items
-canvas.addEventListener("drawing-changed", () => {
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    for (const item of items) {
-        item.display(ctx!);
-    }
+function triggerDrawingChanged() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    items.forEach(item => item.display(ctx));
     if (toolPreview && !cursor.active && activeTool === "draw") {
-        toolPreview.draw(ctx!, cursor.x, cursor.y);
+        toolPreview.draw(ctx, cursor.x, cursor.y);
     }
     if (currentSticker && !cursor.active && activeTool === "sticker") {
-        currentSticker.display(ctx!);
+        currentSticker.display(ctx);
     }
-});
-
-// Trigger drawing changes and tool movement events
-function triggerDrawingChanged() {
-    const event = new CustomEvent("drawing-changed");
-    canvas.dispatchEvent(event);
 }
 
 function triggerToolMoved() {
-    const event = new CustomEvent("tool-moved");
-    canvas.dispatchEvent(event);
-}
-
-// Handle sticker preview on tool-moved
-canvas.addEventListener("tool-moved", () => {
     if (currentSticker) {
         currentSticker.drag(cursor.x, cursor.y);
     }
     triggerDrawingChanged();
-});
+}
 
-// Start a new line or place/drag a sticker
+// Event Listeners
 canvas.addEventListener("mousedown", (event) => {
     cursor.active = true;
-    const startX = event.offsetX;
-    const startY = event.offsetY;
+    const [startX, startY] = [event.offsetX, event.offsetY];
 
     for (let i = items.length - 1; i >= 0; i--) {
-        if (items[i] instanceof Sticker && (items[i] as Sticker).isClicked(startX, startY)) {
-            currentSticker = items[i] as Sticker;
+        const item = items[i];
+        if (item instanceof Sticker && item.isClicked(startX, startY)) {
+            currentSticker = item;
             isDraggingSticker = true;
             return;
         }
@@ -218,96 +172,62 @@ canvas.addEventListener("mousedown", (event) => {
         currentSticker.drag(startX, startY);
         items.push(currentSticker);
         currentSticker = null;
-        activeTool = 'draw'; 
+        activeTool = 'draw';
     }
 
     redoStack.length = 0;
     triggerDrawingChanged();
 });
 
-// Track mouse movements for drawing or dragging
 canvas.addEventListener("mousemove", (event) => {
-    cursor.x = event.offsetX;
-    cursor.y = event.offsetY;
+    [cursor.x, cursor.y] = [event.offsetX, event.offsetY];
 
     if (isDraggingSticker && currentSticker) {
         currentSticker.drag(cursor.x, cursor.y);
     } else if (cursor.active && activeTool === 'draw') {
-        const newX = event.offsetX;
-        const newY = event.offsetY;
-        const currentLine = items[items.length - 1] as MarkerLine;
-        currentLine.drag(newX, newY);
+        (items[items.length - 1] as MarkerLine).drag(cursor.x, cursor.y);
     } else if (activeTool === 'draw') {
         toolPreview = new ToolPreview(currentThickness);
     }
 
     triggerToolMoved();
-    triggerDrawingChanged();
 });
 
-// Stop drawing or dragging on mouse release
 canvas.addEventListener("mouseup", () => {
     cursor.active = false;
     isDraggingSticker = false;
     currentSticker = null;
 });
 
-// Clear canvas button
+// Button Actions
 clearButton.addEventListener("click", () => {
     items.length = 0;
     redoStack.length = 0;
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
-// Undo functionality
 undoButton.addEventListener("click", () => {
-    if (items.length > 0) {
-        const lastItem = items.pop();
-        if (lastItem) {
-            redoStack.push(lastItem);
-        }
-        triggerDrawingChanged();
-    }
+    if (items.length > 0) redoStack.push(items.pop()!);
+    triggerDrawingChanged();
 });
 
-// Redo functionality
 redoButton.addEventListener("click", () => {
-    if (redoStack.length > 0) {
-        const lastRedoItem = redoStack.pop();
-        if (lastRedoItem) {
-            items.push(lastRedoItem);
-        }
-        triggerDrawingChanged();
-    }
+    if (redoStack.length > 0) items.push(redoStack.pop()!);
+    triggerDrawingChanged();
 });
 
-// Set marker thickness 
-thinButton.addEventListener("click", () => {
-    currentThickness = 1;
-});
+thinButton.addEventListener("click", () => (currentThickness = 1));
+thickButton.addEventListener("click", () => (currentThickness = 5));
 
-thickButton.addEventListener("click", () => {
-    currentThickness = 5;
-});
-
-// Create export button
-const exportButton = document.createElement("button");
-exportButton.textContent = "Export";
-app.appendChild(exportButton);
-
+// Export Canvas to Image
 exportButton.addEventListener("click", () => {
-    
-    // Create a temporary canvas
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = 1024;
     tempCanvas.height = 1024;
     const tempCtx = tempCanvas.getContext("2d")!;
     tempCtx.scale(4, 4);
-    items.forEach((item) => {
-        item.display(tempCtx);
-    });
+    items.forEach(item => item.display(tempCtx));
 
-    // Export the canvas
     tempCanvas.toBlob((blob) => {
         if (blob) {
             const link = document.createElement("a");

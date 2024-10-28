@@ -40,6 +40,9 @@ h1 {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
 }
 
 .logo {
@@ -72,9 +75,17 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  display: inline-block;
+  margin: 0.25rem;
+}
+
+.button-container {
+  display: flex; 
+  justify-content: center; 
+  flex-wrap: wrap; 
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #ffffff;
 }
 button:focus,
 button:focus-visible {
@@ -98,7 +109,8 @@ canvas {
   background-color: rgb(226, 224, 224);
   height: 256px;
   width: 256px;
-  border:2px solid black;
+  border: 2px solid black;
   border-radius: 5%;
-  box-shadow:0 5px 10px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.75);
+  margin-bottom: 1rem;
 }
