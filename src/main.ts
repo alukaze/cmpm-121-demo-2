@@ -33,9 +33,41 @@ const exportButton = document.createElement("button");
 exportButton.textContent = "Export";
 document.body.appendChild(exportButton);
 
+// Color Buttons
+const redButton = document.createElement("button");
+redButton.textContent = "Red";
+app.appendChild(redButton);
+
+const blueButton = document.createElement("button");
+blueButton.textContent = "Blue";
+app.appendChild(blueButton);
+
+const greenButton = document.createElement("button");
+greenButton.textContent = "Green";
+app.appendChild(greenButton);
+
+// Color Indicator Button
+const colorIndicatorButton = document.createElement("button");
+colorIndicatorButton.textContent = "Color: Black";
+document.body.appendChild(colorIndicatorButton);
+
 // Sticker Data and Creation
 const stickerData = ["🍷", "🍸", "🍹"];
 const customStickers: string[] = [];
+
+// Default settings for drawing
+let currentThickness = 2;
+let currentColor = "black";
+const colors = ["red", "blue", "green", "black"]; 
+
+function updateColorIndicator() {
+    colorIndicatorButton.textContent = `Color: ${currentColor}`;
+}
+
+function randomizeColor() {
+    currentColor = colors[Math.floor(Math.random() * colors.length)];
+    updateColorIndicator();
+}
 
 function createStickerButtons() {
     document.querySelectorAll(".sticker-button").forEach((button) => button.remove());
@@ -60,16 +92,18 @@ customStickerButton.addEventListener("click", () => {
 document.body.appendChild(customStickerButton);
 
 // Initial Stickers
-createStickerButtons()
+createStickerButtons();
 
 // Classes for Drawing and Stickers
 class MarkerLine {
     private points: Array<{ x: number; y: number }> = [];
     private thickness: number;
+    private color: string;
 
-    constructor(x: number, y: number, thickness: number) {
+    constructor(x: number, y: number, thickness: number, color: string) {
         this.points.push({ x, y });
         this.thickness = thickness;
+        this.color = color;
     }
 
     public drag(x: number, y: number) {
@@ -78,6 +112,7 @@ class MarkerLine {
 
     public display(ctx: CanvasRenderingContext2D) {
         ctx.lineWidth = this.thickness;
+        ctx.strokeStyle = this.color; // Set color
         ctx.beginPath();
         ctx.moveTo(this.points[0].x, this.points[0].y);
         this.points.forEach(point => ctx.lineTo(point.x, point.y));
@@ -121,7 +156,6 @@ class ToolPreview {
 const items: Array<MarkerLine | Sticker> = [];
 const redoStack: Array<MarkerLine | Sticker> = [];
 const cursor = { active: false, x: 0, y: 0 };
-let currentThickness = 2;
 let toolPreview: ToolPreview | null = null;
 let currentSticker: Sticker | null = null;
 let activeTool: "draw" | "sticker" = "draw";
@@ -166,7 +200,7 @@ canvas.addEventListener("mousedown", (event) => {
     }
 
     if (activeTool === 'draw') {
-        const newLine = new MarkerLine(startX, startY, currentThickness);
+        const newLine = new MarkerLine(startX, startY, currentThickness, currentColor); // Use current color
         items.push(newLine);
     } else if (activeTool === 'sticker' && currentSticker) {
         currentSticker.drag(startX, startY);
@@ -216,8 +250,31 @@ redoButton.addEventListener("click", () => {
     triggerDrawingChanged();
 });
 
-thinButton.addEventListener("click", () => (currentThickness = 1));
-thickButton.addEventListener("click", () => (currentThickness = 5));
+thinButton.addEventListener("click", () => {
+    currentThickness = 1;
+    randomizeColor();
+});
+
+thickButton.addEventListener("click", () => {
+    currentThickness = 5;
+    randomizeColor();
+});
+
+// Set color change on button clicks
+redButton.addEventListener("click", () => {
+    currentColor = "red";
+    updateColorIndicator();
+});
+
+blueButton.addEventListener("click", () => {
+    currentColor = "blue";
+    updateColorIndicator();
+});
+
+greenButton.addEventListener("click", () => {
+    currentColor = "green";
+    updateColorIndicator();
+});
 
 // Export Canvas to Image
 exportButton.addEventListener("click", () => {
