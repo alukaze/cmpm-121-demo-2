@@ -289,3 +289,32 @@ thinButton.addEventListener("click", () => {
 thickButton.addEventListener("click", () => {
     currentThickness = 5;
 });
+
+// Create export button
+const exportButton = document.createElement("button");
+exportButton.textContent = "Export";
+app.appendChild(exportButton);
+
+exportButton.addEventListener("click", () => {
+    
+    // Create a temporary canvas
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = 1024;
+    tempCanvas.height = 1024;
+    const tempCtx = tempCanvas.getContext("2d")!;
+    tempCtx.scale(4, 4);
+    items.forEach((item) => {
+        item.display(tempCtx);
+    });
+
+    // Export the canvas
+    tempCanvas.toBlob((blob) => {
+        if (blob) {
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "canvas_export.png";
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+    }, "image/png");
+});
