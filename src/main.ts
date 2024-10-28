@@ -6,8 +6,8 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 document.title = APP_NAME;
 
 // Create title
-const title = document.createElement('h1');
-title.textContent = 'PaintTool Sigh';
+const title = document.createElement("h1");
+title.textContent = "PaintTool Sigh";
 app.appendChild(title);
 
 // Create canvas
@@ -15,43 +15,62 @@ const canvas = document.getElementById("display") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
 
 // Create buttons
-const clearButton = document.createElement('button');
+const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
 app.appendChild(clearButton);
 
-const undoButton = document.createElement('button');
+const undoButton = document.createElement("button");
 undoButton.textContent = "Undo";
 app.appendChild(undoButton);
 
-const redoButton = document.createElement('button');
+const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
 app.appendChild(redoButton);
 
 // Create thickness buttons
-const thinButton = document.createElement('button');
+const thinButton = document.createElement("button");
 thinButton.textContent = "Thin";
 app.appendChild(thinButton);
 
-const thickButton = document.createElement('button');
+const thickButton = document.createElement("button");
 thickButton.textContent = "Thick";
 app.appendChild(thickButton);
 
-// Create sticker buttons
-const stickerWineButton = document.createElement('button');
-stickerWineButton.textContent = "🍷";
-app.appendChild(stickerWineButton);
+// Sticker data and dynamic button creation
+const stickerData = ["🍷", "🍸", "🍹"];
+const customStickers: string[] = [];
 
-const stickerCocktailButton = document.createElement('button');
-stickerCocktailButton.textContent = "🍸";
-app.appendChild(stickerCocktailButton);
+createStickerButtons();
 
-const stickerTropicalButton = document.createElement('button');
-stickerTropicalButton.textContent = "🍹";
-app.appendChild(stickerTropicalButton);
+function createStickerButtons() {
+    // Clear existing sticker buttons
+    const existingStickerButtons = document.querySelectorAll(".sticker-button");
+    existingStickerButtons.forEach((button) => button.remove());
+
+    // Add each sticker as a button
+    [...stickerData, ...customStickers].forEach((emoji) => {
+        const button = document.createElement("button");
+        button.textContent = emoji;
+        button.classList.add("sticker-button");
+        button.addEventListener("click", () => selectSticker(emoji));
+        app.appendChild(button);
+    });
+}
+
+const customStickerButton = document.createElement("button");
+customStickerButton.textContent = "Create Custom Sticker";
+customStickerButton.addEventListener("click", () => {
+    const customEmoji = prompt("Enter custom sticker emoji:", "🌟");
+    if (customEmoji) {
+        customStickers.push(customEmoji);
+        createStickerButtons();
+    }
+});
+app.appendChild(customStickerButton);
 
 // Marker line
 class MarkerLine {
-    private points: Array<{ x: number, y: number }> = [];
+    private points: Array<{ x: number; y: number }> = [];
     private thickness: number;
 
     constructor(x: number, y: number, thickness: number) {
@@ -135,10 +154,31 @@ const cursor = { active: false, x: 0, y: 0 };
 let currentThickness = 2;
 let toolPreview: ToolPreview | null = null;
 let currentSticker: Sticker | null = null;
-let activeTool: 'draw' | 'sticker' = 'draw';
+let activeTool: "draw" | "sticker" = "draw";
 let isDraggingSticker = false;
 
-// Custom event to trigger drawing changed
+// Functions to handle tool selection
+function selectSticker(emoji: string) {
+    activeTool = "sticker";
+    currentSticker = new Sticker(emoji, cursor.x, cursor.y);
+    triggerToolMoved();
+}
+
+// Event listener to redraw all items
+canvas.addEventListener("drawing-changed", () => {
+    ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    for (const item of items) {
+        item.display(ctx!);
+    }
+    if (toolPreview && !cursor.active && activeTool === "draw") {
+        toolPreview.draw(ctx!, cursor.x, cursor.y);
+    }
+    if (currentSticker && !cursor.active && activeTool === "sticker") {
+        currentSticker.display(ctx!);
+    }
+});
+
+// Trigger drawing changes and tool movement events
 function triggerDrawingChanged() {
     const event = new CustomEvent("drawing-changed");
     canvas.dispatchEvent(event);
@@ -148,20 +188,6 @@ function triggerToolMoved() {
     const event = new CustomEvent("tool-moved");
     canvas.dispatchEvent(event);
 }
-
-// Event listener to redraw all items
-canvas.addEventListener("drawing-changed", () => {
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
-    for (const item of items) {
-        item.display(ctx!);
-    }
-    if (toolPreview && !cursor.active && activeTool === 'draw') {
-        toolPreview.draw(ctx!, cursor.x, cursor.y);
-    }
-    if (currentSticker && !cursor.active && activeTool === 'sticker') {
-        currentSticker.display(ctx!);
-    }
-});
 
 // Handle sticker preview on tool-moved
 canvas.addEventListener("tool-moved", () => {
@@ -177,7 +203,6 @@ canvas.addEventListener("mousedown", (event) => {
     const startX = event.offsetX;
     const startY = event.offsetY;
 
-    // Check if clicked on an existing sticker
     for (let i = items.length - 1; i >= 0; i--) {
         if (items[i] instanceof Sticker && (items[i] as Sticker).isClicked(startX, startY)) {
             currentSticker = items[i] as Sticker;
@@ -263,23 +288,4 @@ thinButton.addEventListener("click", () => {
 
 thickButton.addEventListener("click", () => {
     currentThickness = 5;
-});
-
-// Sticker buttons 
-stickerWineButton.addEventListener("click", () => {
-    activeTool = 'sticker';
-    currentSticker = new Sticker('🍷', cursor.x, cursor.y);
-    triggerToolMoved();
-});
-
-stickerCocktailButton.addEventListener("click", () => {
-    activeTool = 'sticker';
-    currentSticker = new Sticker('🍸', cursor.x, cursor.y);
-    triggerToolMoved();
-});
-
-stickerTropicalButton.addEventListener("click", () => {
-    activeTool = 'sticker';
-    currentSticker = new Sticker('🍹', cursor.x, cursor.y);
-    triggerToolMoved();
 });
