@@ -8,6 +8,11 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 const canvas = document.getElementById("display") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
+// Sticker Elements
+const stickerFont = "30px Arial";
+const stickerOffsetX = 20;
+const stickerOffsetY = 15;
+
 // Button Creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -158,14 +163,14 @@ class Sticker {
     }
 
     public display(ctx: CanvasRenderingContext2D) {
-        ctx.font = "30px Arial";
-        ctx.fillText(this.emoji, this.x - 20, this.y + 15);
+        ctx.font = stickerFont;
+        ctx.fillText(this.emoji, this.x - stickerOffsetX, this.y + stickerOffsetY);
     }
 
     public isClicked(x: number, y: number): boolean {
         return (
-            x >= this.x - 20 && x <= this.x + 20 &&
-            y >= this.y - 15 && y <= this.y + 15
+            x >= this.x - stickerOffsetX && x <= this.x + stickerOffsetX &&
+            y >= this.y - stickerOffsetY && y <= this.y + stickerOffsetY
         );
     }
 }
