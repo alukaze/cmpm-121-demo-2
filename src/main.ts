@@ -8,6 +8,11 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 const canvas = document.getElementById("display") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
+// Sticker Elements
+const stickerFont = "30px Arial";
+const stickerOffsetX = 20;
+const stickerOffsetY = 15;
+
 // Custom Event for Redrawing
 const drawingDispatchedEvent = new Event('drawing-dispatched');
 
@@ -24,6 +29,7 @@ const redoButton = document.createElement("button");
 redoButton.textContent = "Redo";
 document.body.appendChild(redoButton);
 
+
 const thinButton = document.createElement("button");
 thinButton.textContent = "Thin";
 app.appendChild(thinButton);
@@ -31,6 +37,14 @@ app.appendChild(thinButton);
 const thickButton = document.createElement("button");
 thickButton.textContent = "Thick";
 app.appendChild(thickButton);
+
+const thicknessButtonContainer = document.createElement("div");
+thicknessButtonContainer.id = "thickness-button-container";
+
+thicknessButtonContainer.appendChild(thinButton);
+thicknessButtonContainer.appendChild(thickButton);
+
+app.appendChild(thicknessButtonContainer);
 
 const exportButton = document.createElement("button");
 exportButton.textContent = "Export";
@@ -85,6 +99,26 @@ function createStickerButtons() {
 
 const customStickerButton = document.createElement("button");
 customStickerButton.textContent = "Create Custom Sticker";
+
+const buttonContainer = document.createElement("div");
+buttonContainer.id = "button-container";
+
+buttonContainer.append(
+  clearButton,
+  undoButton,
+  redoButton,
+  thinButton,
+  thickButton,
+  exportButton,
+  redButton,
+  blueButton,
+  greenButton,
+  customStickerButton,
+  colorIndicatorButton
+);
+
+document.body.appendChild(buttonContainer);
+
 customStickerButton.addEventListener("click", () => {
     const customEmoji = prompt("Enter custom sticker emoji:", "🌟");
     if (customEmoji) {
@@ -132,14 +166,14 @@ class Sticker {
     }
 
     public display(ctx: CanvasRenderingContext2D) {
-        ctx.font = "30px Arial";
-        ctx.fillText(this.emoji, this.x - 20, this.y + 15);
+        ctx.font = stickerFont;
+        ctx.fillText(this.emoji, this.x - stickerOffsetX, this.y + stickerOffsetY);
     }
 
     public isClicked(x: number, y: number): boolean {
         return (
-            x >= this.x - 20 && x <= this.x + 20 &&
-            y >= this.y - 15 && y <= this.y + 15
+            x >= this.x - stickerOffsetX && x <= this.x + stickerOffsetX &&
+            y >= this.y - stickerOffsetY && y <= this.y + stickerOffsetY
         );
     }
 }
