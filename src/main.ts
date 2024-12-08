@@ -8,6 +8,9 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 const canvas = document.getElementById("display") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d")!;
 
+// Custom Event for Redrawing
+const drawingDispatchedEvent = new Event('drawing-dispatched');
+
 // Button Creation
 const clearButton = document.createElement("button");
 clearButton.textContent = "Clear";
@@ -167,16 +170,23 @@ function selectSticker(emoji: string) {
     triggerToolMoved();
 }
 
+
 function triggerDrawingChanged() {
+
+    document.dispatchEvent(drawingDispatchedEvent);
+}
+
+document.addEventListener("drawing-dispatched", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     items.forEach(item => item.display(ctx));
+
     if (toolPreview && !cursor.active && activeTool === "draw") {
         toolPreview.draw(ctx, cursor.x, cursor.y);
     }
     if (currentSticker && !cursor.active && activeTool === "sticker") {
         currentSticker.display(ctx);
     }
-}
+});
 
 function triggerToolMoved() {
     if (currentSticker) {
